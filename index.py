@@ -16,7 +16,7 @@ client = openai.OpenAI(
 
 EMBEDDING_MODEL_NAME  = "text-embedding-3-small"
 GENERATION_MODEL_NAME = "gpt-3.5-turbo"
-EMBEDDING_FILE        = Path(__file__).parent / "embedding.npz"
+EMBEDDING_FILE        = "embedding.npz"
 
 app = FastAPI()
 
@@ -130,28 +130,21 @@ async def generate_answer(question: str, chunk: Dict) -> str:
 # ——— 6) STARTUP: load or build embeddings ———
 @app.on_event("startup")
 async def startup_event():
-    global embeddings_data, chunks_metadata
+    global embeddings_data, chunks_metadata, embedding_load_error
 
     try:
-        EMBED_PATH = Path(__file__).parent / "embedding.npz"
-        if not EMBED_PATH.exists():
-            print("📦 Downloading embedding...")
-            url = "https://github.com/Anish071105/TDS-verceldeploy/releases/download/v1.0/embedding.zip"
-            zip_path = Path(__file__).parent / "embedding.zip"
-            urllib.request.urlretrieve(url, zip_path)
-            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(Path(__file__).parent)
-
-        data = np.load(EMBED_PATH, allow_pickle=True)
+        data = np.load(EMBEDDING_FILE, allow_pickle=True)
         embeddings_data = np.array(data["vectors"])
         chunks_metadata = list(data["metadata"])
         print(f"✅ Loaded {len(embeddings_data)} embeddings")
-
+        embedding_load_error = None
     except Exception as e:
-        print("❌ Failed loading embeddings:", e)
+        error_message = f"❌ Failed loading embeddings: {e}"
+        print(error_message)
         embeddings_data = np.array([])
         chunks_metadata = []
-        
+        embedding_load_error = str(e)  # Store error to return to users
+
 # ——— 7) API ROUTE ———
 @app.post("/api/", response_model=QueryResponse)
 async def api_handler(payload: QueryRequest) -> QueryResponse:
@@ -177,12 +170,6 @@ async def root():
 async def health():
     return {
         "status":"ok",
-        "embeddings_loaded": "embeddings_loaded": bool(embeddings_data is not None and embeddings_data.size > 0),
+        "embeddings_loaded": bool(embeddings_data.size),
         "num_embeddings": embeddings_data.shape[0] if embeddings_data is not None else 0
     }
-@app.get("/debug-files")
-def debug_files():
-    try:
-        return {"files": os.listdir(Path(__file__).parent)}
-    except Exception as e:
-        return {"error": str(e)}
