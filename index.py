@@ -167,6 +167,6 @@ async def root():
 async def health():
     return {
         "status":"ok",
-        "embeddings_loaded": bool(embeddings_data.size),
+        "embeddings_loaded": "embeddings_loaded": bool(embeddings_data is not None and embeddings_data.size > 0),
         "num_embeddings": embeddings_data.shape[0] if embeddings_data is not None else 0
     }
