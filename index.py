@@ -35,6 +35,7 @@ class QueryResponse(BaseModel):
 # global storage
 embeddings_data: Optional[np.ndarray] = None
 chunks_metadata: Optional[List[Dict]]  = None
+embedding_load_error: Optional[str] = None
 
 # ——— 1) IMAGE CAPTIONING using GPT-3.5-TURBO ———
 async def get_image_description(b64_data_uri: str) -> Optional[str]:
@@ -168,8 +169,10 @@ async def root():
 
 @app.get("/health")
 async def health():
+    if embedding_load_error:
+        raise HTTPException(status_code=500, detail=f"Embedding load failed: {embedding_load_error}")
     return {
-        "status":"ok",
+        "status": "ok",
         "embeddings_loaded": bool(embeddings_data.size),
         "num_embeddings": embeddings_data.shape[0] if embeddings_data is not None else 0
     }
