@@ -170,6 +170,7 @@ async def root():
 @app.get("/health")
 async def health():
     if embedding_load_error:
+        print(f"❌ Embedding load error (visible in logs): {embedding_load_error}")
         raise HTTPException(status_code=500, detail=f"Embedding load failed: {embedding_load_error}")
     return {
         "status": "ok",
