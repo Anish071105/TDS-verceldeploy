@@ -16,7 +16,7 @@ client = openai.OpenAI(
 
 EMBEDDING_MODEL_NAME  = "text-embedding-3-small"
 GENERATION_MODEL_NAME = "gpt-3.5-turbo"
-EMBEDDING_FILE        = "embedding.npz"
+EMBEDDING_FILE        = Path(__file__).parent / "embedding.npz"
 
 app = FastAPI()
 
