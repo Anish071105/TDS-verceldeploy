@@ -86,15 +86,13 @@ async def find_best_chunk(
     question: str,
     image_b64: Optional[str],
     embeddings: np.ndarray,
-    metadata: List[Dict]
+    metadata:   List[Dict]
 ) -> Optional[Dict]:
     if embeddings is None or embeddings.size == 0:
-        print("⚠️ No embeddings loaded.")
         return None
 
     emb = await get_combined_embedding(question, image_b64)
     if emb is None:
-        print("⚠️ Failed to get embedding for question.")
         return None
 
     dots  = np.dot(embeddings, emb)
@@ -103,15 +101,12 @@ async def find_best_chunk(
 
     idx = int(np.argmax(sims))
     score = float(sims[idx])
-    chunk = metadata[idx].copy()
-    chunk["similarity"] = score
-
-    if score < 0.05:
-        print("⚠️ Similarity below threshold, ignoring match.")
+    if score < 0.3:
         return None
 
+    chunk = metadata[idx].copy()
+    chunk["similarity"] = score
     return chunk
-
 
 # ——— 5) GENERATE ANSWER ———
 async def generate_answer(question: str, chunk: Dict) -> str:
@@ -175,7 +170,3 @@ async def health():
         "embeddings_loaded": bool(embeddings_data.size),
         "num_embeddings": embeddings_data.shape[0] if embeddings_data is not None else 0
     }
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("api.index:app", host="0.0.0.0", port=8000, reload=True)
